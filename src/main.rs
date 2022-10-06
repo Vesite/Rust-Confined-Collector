@@ -10,13 +10,18 @@ fn main() {
     let mut app = App::new();
 
     app.add_plugins(DefaultPlugins);
-
     app.add_plugin(EguiPlugin);
+    
+    app.insert_resource(SpriteCollection {
+        sprites_vec: Vec::new(),
+    });
     app.insert_resource(GameResources {
         inventory_vec: Vec::new(),
     });
+
     app.add_startup_system(init_inventory_vec);
     app.add_startup_system(draw_a_sprite);
+    app.add_startup_system(load_sprites);
 
     app.add_state(AppState::Play);
     app.add_system_set(
@@ -45,44 +50,48 @@ enum AppState {
     Play,
 }
 
+struct SpriteCollection {
+    sprites_vec: Vec<egui::TextureHandle>,
+}
+
 enum MySprites {
-    GOLD = 0,
-    WOOD = 1,
-    STONE = 2,
-    HATCHET = 3,
-    O_HATCHET = 4,
-    S_HATCHET = 5,
-    PICKAXE = 6,
-    O_PICKAXE = 7,
-    S_PICKAXE = 8,
-    WOOD_CUTTER = 9,
-    O_WOOD_CUTTER = 10,
-    MINER = 11,
-    O_MINER = 12,
-    SUPER_WORKER = 13,
-    O_SUPER_WORKER = 14,
-    WHEAT_FIELD = 15,
-    WHEAT = 16,
-    FINAL_STATUE = 17,
-    SYTHE = 18,
-    O_SYTHE = 19,
-    S_SYTHE = 20,
-    O_WHEAT_FIELD = 21,
-    O_FINAL_STATUE = 22,
-    DEFAULT = 300,
+    O_WOOD_CUTTER = 0,
+    O_MINER = 1,
+    O_SUPER_WORKER = 2,
+    S_HATCHET = 3,
+    S_PICKAXE = 4,
+    S_SYTHE = 5,
+    O_WHEAT_FIELD = 6,
+    O_FINAL_STATUE = 7,
+    
+    // GOLD = 0,
+    // WOOD = 1,
+    // STONE = 2,
+    // HATCHET = 3,
+    // O_HATCHET = 4,
+    // PICKAXE = 6,
+    // O_PICKAXE = 7,
+    // WOOD_CUTTER = 9,
+    // MINER = 11,
+    // WHEAT_FIELD = 15,
+    // WHEAT = 16,
+    // FINAL_STATUE = 17,
+    // SYTHE = 18,
+    // O_SYTHE = 19,
+    // DEFAULT = 300,
 }
 
 // One inventory item.
 // Contains name, resource and a handle to the image texture.
-struct GameResource {
+struct InventoryItem {
     name: String,
     amount: f64,
     handle: egui::TextureHandle,
 }
 
-impl GameResource {
+impl InventoryItem {
     fn new(name: impl Into<String>, amount: f64, handle: egui::TextureHandle) -> Self {
-        GameResource {
+        InventoryItem {
             name: name.into(),
             amount: amount,
             handle: handle,
@@ -92,7 +101,7 @@ impl GameResource {
 
 // Struct for the entire inventory
 struct GameResources {
-    inventory_vec: Vec<GameResource>,
+    inventory_vec: Vec<InventoryItem>,
 }
 
 #[derive(Clone, Copy)]
@@ -133,6 +142,12 @@ fn my_get_resource_sprite<'a>(game_resources: &'a mut ResMut<GameResources>, inv
     return &game_resource.handle;
 }
 
+fn my_get_sprites_handle<'a>(sprite_collection: &'a mut ResMut<SpriteCollection>, inv_pos_enum: i32) -> &'a egui::TextureHandle {
+    let pos = inv_pos_enum as usize;
+    let sprite_handle = &sprite_collection.sprites_vec[pos];
+    sprite_handle
+}
+
 fn load_image(ctx: &egui::Context, image_name: &str) -> egui::TextureHandle {
     let path = format!("assets/{}.png", image_name);
     let image = match load_image_from_path(path::Path::new(&path)) {
@@ -155,40 +170,40 @@ fn init_inventory_vec(mut game_resources: ResMut<GameResources>, mut egui_contex
     let mut ctx = egui_context.ctx_mut();
     
     //Init The vec
-    let game_resource = GameResource::new("Gold", 0.0, load_image(ctx, "gold"));
+    let game_resource = InventoryItem::new("Gold", 0.0, load_image(ctx, "gold"));
     game_resources.inventory_vec.insert(InvPos::GOLD as usize, game_resource);
 
-    let game_resource = GameResource::new("Wood", 0.0, load_image(ctx, "wood"));
+    let game_resource = InventoryItem::new("Wood", 0.0, load_image(ctx, "wood"));
     game_resources.inventory_vec.insert(InvPos::WOOD as usize, game_resource);
 
-    let game_resource = GameResource::new("Stone", 0.0, load_image(ctx, "stone"));
+    let game_resource = InventoryItem::new("Stone", 0.0, load_image(ctx, "stone"));
     game_resources.inventory_vec.insert(InvPos::STONE as usize, game_resource);
 
-    let game_resource = GameResource::new("Wheat", 0.0, load_image(ctx, "wheat"));
+    let game_resource = InventoryItem::new("Wheat", 0.0, load_image(ctx, "wheat"));
     game_resources.inventory_vec.insert(InvPos::WHEAT as usize, game_resource);
 
-    let game_resource = GameResource::new("Hatchet", 0.0, load_image(ctx, "hatchet"));
+    let game_resource = InventoryItem::new("Hatchet", 0.0, load_image(ctx, "hatchet"));
     game_resources.inventory_vec.insert(InvPos::HATCHET as usize, game_resource);
 
-    let game_resource = GameResource::new("Pickaxe", 0.0, load_image(ctx, "pickaxe"));
+    let game_resource = InventoryItem::new("Pickaxe", 0.0, load_image(ctx, "pickaxe"));
     game_resources.inventory_vec.insert(InvPos::PICKAXE as usize, game_resource);
 
-    let game_resource = GameResource::new("Sythe", 0.0, load_image(ctx, "sythe"));
+    let game_resource = InventoryItem::new("Sythe", 0.0, load_image(ctx, "sythe"));
     game_resources.inventory_vec.insert(InvPos::SYTHE as usize, game_resource);
 
-    let game_resource = GameResource::new("Wood Cutter", 0.0, load_image(ctx, "wood_cutter"));
+    let game_resource = InventoryItem::new("Wood Cutter", 0.0, load_image(ctx, "wood_cutter"));
     game_resources.inventory_vec.insert(InvPos::WOOD_CUTTER as usize, game_resource);
 
-    let game_resource = GameResource::new("Miner", 0.0, load_image(ctx, "miner"));
+    let game_resource = InventoryItem::new("Miner", 0.0, load_image(ctx, "miner"));
     game_resources.inventory_vec.insert(InvPos::MINER as usize, game_resource);
 
-    let game_resource = GameResource::new("Super Worker", 0.0, load_image(ctx, "super_worker"));
+    let game_resource = InventoryItem::new("Super Worker", 0.0, load_image(ctx, "super_worker"));
     game_resources.inventory_vec.insert(InvPos::SUPER_WORKER as usize, game_resource);
 
-    let game_resource = GameResource::new("Wheat Field", 0.0, load_image(ctx, "wheat_field"));
+    let game_resource = InventoryItem::new("Wheat Field", 0.0, load_image(ctx, "wheat_field"));
     game_resources.inventory_vec.insert(InvPos::WHEAT_FIELD as usize, game_resource);
 
-    let game_resource = GameResource::new("Final Statue", 0.0, load_image(ctx, "final_statue"));
+    let game_resource = InventoryItem::new("Final Statue", 0.0, load_image(ctx, "final_statue"));
     game_resources.inventory_vec.insert(InvPos::FINAL_STATUE as usize, game_resource);
 }
 
@@ -493,36 +508,6 @@ fn market_view(
 ) {
     let ctx = egui_context.ctx_mut();
 
-    let sprite_id_value_1 = ctx.load_texture(
-        "s_hatchet",
-        load_image_from_path(path::Path::new("assets/s_hatchet.png")).unwrap(),
-        egui::TextureFilter::Linear
-    );
-
-    let sprite_id_value_2 = ctx.load_texture(
-        "s_pickaxe",
-        load_image_from_path(path::Path::new("assets/s_pickaxe.png")).unwrap(),
-        egui::TextureFilter::Linear
-    );
-    
-    let sprite_id_value_3 = ctx.load_texture(
-        "s_sythe",
-        load_image_from_path(path::Path::new("assets/s_sythe.png")).unwrap(),
-        egui::TextureFilter::Linear
-    );
-    
-    let sprite_id_value_4 = ctx.load_texture(
-        "o_wheat_field",
-        load_image_from_path(path::Path::new("assets/o_wheat_field.png")).unwrap(),
-        egui::TextureFilter::Linear
-    );
-    
-    let sprite_id_value_5 = ctx.load_texture(
-        "o_final_statue",
-        load_image_from_path(path::Path::new("assets/o_final_statue.png")).unwrap(),
-        egui::TextureFilter::Linear
-    );
-
     egui::Window::new("Trade").show(ctx, |ui| {
         /*
         Sell hatchet
@@ -535,8 +520,9 @@ fn market_view(
                 //Make labels
                 ui.label(label_text);
 
+                let sprite = my_get_resource_sprite(&mut game_resources, MySprites::S_HATCHET as i32);
                 let mut button = egui::ImageButton::new(
-                    sprite_id_value_1.id(),
+                    sprite.id(),
                     [32.0 * 2., 32.0 * 2.],
                 );
                 let hatchet_amount =
@@ -568,8 +554,9 @@ fn market_view(
                 //Make labels
                 ui.label(label_text);
 
+                let sprite = my_get_resource_sprite(&mut game_resources, MySprites::S_PICKAXE as i32);
                 let mut button = egui::ImageButton::new(
-                    sprite_id_value_2.id(),
+                    sprite.id(),
                     [32.0 * 2., 32.0 * 2.],
                 );
                 let pickaxe_amount =
@@ -601,8 +588,9 @@ fn market_view(
                 //Make labels
                 ui.label(label_text);
 
+                let sprite = my_get_resource_sprite(&mut game_resources, MySprites::S_SYTHE as i32);
                 let mut button = egui::ImageButton::new(
-                    sprite_id_value_3.id(),
+                    sprite.id(),
                     [32.0 * 2., 32.0 * 2.],
                 );
                 let amount = my_get_resource_count(&mut game_resources, InvPos::SYTHE as i32);
@@ -633,8 +621,9 @@ fn market_view(
                 //Make labels
                 ui.label(label_text);
 
+                let sprite = my_get_resource_sprite(&mut game_resources, MySprites::O_WHEAT_FIELD as i32);
                 let mut button = egui::ImageButton::new(
-                    sprite_id_value_4.id(),
+                    sprite.id(),
                     [32.0 * 2., 32.0 * 2.],
                 );
                 let gold = my_get_resource_count(&mut game_resources, InvPos::GOLD as i32);
@@ -673,8 +662,9 @@ fn market_view(
                 //Make labels
                 ui.label(label_text);
 
+                let sprite = my_get_resource_sprite(&mut game_resources, MySprites::O_FINAL_STATUE as i32);
                 let mut button = egui::ImageButton::new(
-                    sprite_id_value_5.id(),
+                    sprite.id(),
                     [32.0 * 2., 32.0 * 2.],
                 );
                 let gold = my_get_resource_count(&mut game_resources, InvPos::GOLD as i32);
@@ -702,28 +692,6 @@ fn market_view(
         }
     });
 }
-
-/*
-fn load_all_my_sprites_enum(mut egui_context: ResMut<EguiContext>, asset_server: Res<AssetServer>) {
-
-    let sprite = asset_server.load("gold.png");
-    egui_context.set_egui_texture(MySprites::GOLD as u64, sprite);
-    let sprite = asset_server.load("wood.png");
-    egui_context.set_egui_texture(MySprites::WOOD as u64, sprite);
-    let sprite = asset_server.load("stone.png");
-    egui_context.set_egui_texture(MySprites::STONE as u64, sprite);
-
-    let sprite = asset_server.load("hatchet.png");
-    egui_context.set_egui_texture(MySprites::HATCHET as u64, sprite);
-    let sprite = asset_server.load("pickaxe.png");
-    egui_context.set_egui_texture(MySprites::PICKAXE as u64, sprite);
-    let sprite = asset_server.load("wood_cutter.png");
-    egui_context.set_egui_texture(MySprites::WOOD_CUTTER as u64, sprite);
-    let sprite = asset_server.load("miner.png");
-    egui_context.set_egui_texture(MySprites::MINER as u64, sprite);
-
-}
-*/
 
 //Visualize the vec "game_resources"
 fn inventory_view(
@@ -822,26 +790,9 @@ fn hire_workers_view(
     mut egui_context: ResMut<EguiContext>,
     asset_server: Res<AssetServer>,
     mut game_resources: ResMut<GameResources>,
+    mut sprite_collection: ResMut<SpriteCollection>,
 ) {
     let mut ctx = egui_context.ctx_mut();
-
-    let sprite_id_value_1 = ctx.load_texture(
-        "o_wood_cutter",
-        load_image_from_path(path::Path::new("assets/o_wood_cutter.png")).unwrap(),
-        egui::TextureFilter::Linear
-    );
-
-    let sprite_id_value_2 = ctx.load_texture(
-        "o_miner",
-        load_image_from_path(path::Path::new("assets/o_miner.png")).unwrap(),
-        egui::TextureFilter::Linear
-    );
-    
-    let sprite_id_value_3 = ctx.load_texture(
-        "o_super_worker",
-        load_image_from_path(path::Path::new("assets/o_super_worker.png")).unwrap(),
-        egui::TextureFilter::Linear
-    );
 
     egui::Window::new("Hire Workers").show(ctx, |ui| {
         /*
@@ -858,7 +809,8 @@ fn hire_workers_view(
                 //Make labels
                 ui.label(label_text);
 
-                let mut button = egui::ImageButton::new(sprite_id_value_1.id(), [32.0*2., 32.0*2.]);
+                let wood_cutter_handle = my_get_sprites_handle(&mut sprite_collection, MySprites::O_WOOD_CUTTER as i32); 
+                let mut button = egui::ImageButton::new(wood_cutter_handle.id(), [32.0*2., 32.0*2.]);
                 let gold = my_get_resource_count(&mut game_resources, InvPos::GOLD as i32);
                 if gold >= g_cost {
                     //Do nothing (enabled)
@@ -890,7 +842,8 @@ fn hire_workers_view(
                 //Make labels
                 ui.label(label_text);
 
-                let mut button = egui::ImageButton::new(sprite_id_value_2.id(), [32.0*2., 32.0*2.]);
+                let miner_handle = my_get_sprites_handle(&mut sprite_collection, MySprites::O_MINER as i32); 
+                let mut button = egui::ImageButton::new(miner_handle.id(), [32.0*2., 32.0*2.]);
                 let gold = my_get_resource_count(&mut game_resources, InvPos::GOLD as i32);
                 if gold >= g_cost {
                     //Do nothing (enabled)
@@ -923,7 +876,8 @@ fn hire_workers_view(
                 //Make labels
                 ui.label(label_text);
 
-                let mut button = egui::ImageButton::new(sprite_id_value_3.id(), [32.0*2., 32.0*2.]);
+                let super_worker_handle = my_get_sprites_handle(&mut sprite_collection, MySprites::O_SUPER_WORKER as i32); 
+                let mut button = egui::ImageButton::new(super_worker_handle.id(), [32.0*2., 32.0*2.]);
                 let gold = my_get_resource_count(&mut game_resources, InvPos::GOLD as i32);
                 let wheat = my_get_resource_count(&mut game_resources, InvPos::WHEAT as i32);
                 if gold >= g_cost && wheat >= wheat_cost {
@@ -962,52 +916,32 @@ fn draw_a_sprite(
     });
 }
 
-/*
-One of my trade buttons contains:
--A sprite of the thing we get
-- A word "Craft / Buy / Collect" to
-- The amount and enum of the resource we get
-- The amount and enum of the cost (arg 1)
+fn load_sprites(mut sprite_collection: ResMut<SpriteCollection>, mut egui_context: ResMut<EguiContext>) {
+    let ctx = egui_context.ctx_mut();
 
-We need to init a sprite in that usual way and have the "sprite_id_value" as a argument
-*/
-/*
-fn add_trade_button_cost_arg_1(
-    asset_server: Res<AssetServer>,
-    egui_context: ResMut<EguiContext>,
-    ui: &mut Ui,
-    mut game_resources: &mut ResMut<GameResources>,
-    top_text: String,
-    sprite_id_value: u64,
-    rec_cost_1_type: InvPos,
-    rec_cost_1_amount: f64,
-    rec_get_1_type: InvPos,
-    rec_get_1_amount: f64,
-    hover_text: String ) {
+    // Workers
+    let sprite = load_image(ctx, "o_wood_cutter");
+    sprite_collection.sprites_vec.insert(MySprites::O_WOOD_CUTTER as usize, sprite);    
 
-        ui.group(|ui| {
+    let sprite = load_image(ctx, "o_miner");
+    sprite_collection.sprites_vec.insert(MySprites::O_MINER as usize, sprite);    
 
-            let label = egui::Label::new(top_text);
+    let sprite = load_image(ctx, "o_super_worker");
+    sprite_collection.sprites_vec.insert(MySprites::O_SUPER_WORKER as usize, sprite);    
 
-            let mut button = egui::ImageButton::new(egui::TextureId::User(sprite_id_value), [32.*2., 32.*2.]);
-            let has_rec_1 = my_get_resource_count(game_resources, rec_cost_1_type as i32);
+    // Market
+    let sprite = load_image(ctx, "s_hatchet");
+    sprite_collection.sprites_vec.insert(MySprites::S_HATCHET as usize, sprite);    
 
-            if  has_rec_1 >= rec_cost_1_amount {
-                //Do nothign (enabled)
-            } else {
-                button = button.sense(Sense::hover()) //Disabled
-            }
+    let sprite = load_image(ctx, "s_pickaxe");
+    sprite_collection.sprites_vec.insert(MySprites::S_PICKAXE as usize, sprite);    
+    
+    let sprite = load_image(ctx, "s_sythe");
+    sprite_collection.sprites_vec.insert(MySprites::S_SYTHE as usize, sprite);    
 
-            let response_for_button = ui.add(button);
-            if response_for_button.clicked() {
-                my_add_resource(&mut game_resources, rec_cost_1_type, -rec_cost_1_amount);
-                my_add_resource(&mut game_resources, rec_get_1_type, rec_get_1_amount);
-            }
-            response_for_button.on_hover_text(hover_text);
+    let sprite = load_image(ctx, "o_wheat_field");
+    sprite_collection.sprites_vec.insert(MySprites::O_WHEAT_FIELD as usize, sprite);    
 
-        });
-
+    let sprite = load_image(ctx, "o_final_statue");
+    sprite_collection.sprites_vec.insert(MySprites::O_FINAL_STATUE as usize, sprite);    
 }
-
-
-*/
