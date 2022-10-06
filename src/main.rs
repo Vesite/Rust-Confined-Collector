@@ -63,22 +63,9 @@ enum MySprites {
     S_SYTHE = 5,
     O_WHEAT_FIELD = 6,
     O_FINAL_STATUE = 7,
-    
-    // GOLD = 0,
-    // WOOD = 1,
-    // STONE = 2,
-    // HATCHET = 3,
-    // O_HATCHET = 4,
-    // PICKAXE = 6,
-    // O_PICKAXE = 7,
-    // WOOD_CUTTER = 9,
-    // MINER = 11,
-    // WHEAT_FIELD = 15,
-    // WHEAT = 16,
-    // FINAL_STATUE = 17,
-    // SYTHE = 18,
-    // O_SYTHE = 19,
-    // DEFAULT = 300,
+    O_HATCHET = 8,
+    O_PICKAXE = 9,
+    O_SYTHE = 10,
 }
 
 // One inventory item.
@@ -363,26 +350,9 @@ fn crafting_view(
     mut egui_context: ResMut<EguiContext>,
     asset_server: Res<AssetServer>,
     mut game_resources: ResMut<GameResources>,
+    mut sprite_collection: ResMut<SpriteCollection>,
 ) {
     let ctx = egui_context.ctx_mut();
-    
-    let sprite_id_value_1 = ctx.load_texture(
-        "o_hatchet",
-        load_image_from_path(path::Path::new("assets/o_hatchet.png")).unwrap(),
-        egui::TextureFilter::Linear
-    );
-    
-    let sprite_id_value_2 = ctx.load_texture(
-        "o_pickaxe",
-        load_image_from_path(path::Path::new("assets/o_pickaxe.png")).unwrap(),
-        egui::TextureFilter::Linear
-    );
-
-    let sprite_id_value_3 = ctx.load_texture(
-        "o_sythe",
-        load_image_from_path(path::Path::new("assets/o_sythe.png")).unwrap(),
-        egui::TextureFilter::Linear
-    );
 
     egui::Window::new("Crafting").show(ctx, |ui| {
         /*
@@ -400,8 +370,9 @@ fn crafting_view(
                 //Make labels
                 ui.label(label_text);
 
+                let sprite = my_get_resource_sprite(&mut game_resources, MySprites::O_HATCHET as i32);
                 let mut button = egui::ImageButton::new(
-                    sprite_id_value_1.id(),
+                    sprite.id(),
                     [32.0 * 2., 32.0 * 2.],
                 );
                 let wood = my_get_resource_count(&mut game_resources, InvPos::WOOD as i32);
@@ -437,8 +408,9 @@ fn crafting_view(
                 //Make labels
                 ui.label(label_text);
 
+                let sprite = my_get_resource_sprite(&mut game_resources, MySprites::O_PICKAXE as i32);
                 let mut button = egui::ImageButton::new(
-                    sprite_id_value_2.id(),
+                    sprite.id(),
                     [32.0 * 2., 32.0 * 2.],
                 );
                 let wood = my_get_resource_count(&mut game_resources, InvPos::WOOD as i32);
@@ -475,8 +447,9 @@ fn crafting_view(
                 //Make labels
                 ui.label(label_text);
 
+                let sprite = my_get_resource_sprite(&mut game_resources, MySprites::O_SYTHE as i32);
                 let mut button = egui::ImageButton::new(
-                    sprite_id_value_3.id(),
+                    sprite.id(),
                     [32.0 * 2., 32.0 * 2.],
                 );
                 let wood = my_get_resource_count(&mut game_resources, InvPos::WOOD as i32);
@@ -944,4 +917,14 @@ fn load_sprites(mut sprite_collection: ResMut<SpriteCollection>, mut egui_contex
 
     let sprite = load_image(ctx, "o_final_statue");
     sprite_collection.sprites_vec.insert(MySprites::O_FINAL_STATUE as usize, sprite);    
+
+    // Crafting
+    let sprite = load_image(ctx, "o_hatchet");
+    sprite_collection.sprites_vec.insert(MySprites::O_HATCHET as usize, sprite);    
+    
+    let sprite = load_image(ctx, "o_pickaxe");
+    sprite_collection.sprites_vec.insert(MySprites::O_PICKAXE as usize, sprite);    
+    
+    let sprite = load_image(ctx, "o_sythe");
+    sprite_collection.sprites_vec.insert(MySprites::O_SYTHE as usize, sprite);    
 }
