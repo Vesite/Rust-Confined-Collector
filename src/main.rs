@@ -72,15 +72,27 @@ enum MySprites {
     DEFAULT = 300,
 }
 
+// One inventory item.
+// Contains name, resource and a handle to the image texture.
+struct GameResource {
+    name: String,
+    amount: f64,
+    handle: egui::TextureHandle,
+}
+
+impl GameResource {
+    fn new(name: impl Into<String>, amount: f64, handle: egui::TextureHandle) -> Self {
+        GameResource {
+            name: name.into(),
+            amount: amount,
+            handle: handle,
+        }
+    }
+} 
+
+// Struct for the entire inventory
 struct GameResources {
-    /*
-    This is out "inventory" / All our items
-    Each elemets is a tuple with:
-    - Name of the resouce
-    - The amount (f64)
-    - An enum corresponding to the image texture id
-    */
-    inventory_vec: Vec<(String, f64, egui::TextureId)>,
+    inventory_vec: Vec<GameResource>,
 }
 
 #[derive(Clone, Copy)]
@@ -101,42 +113,27 @@ enum InvPos {
     FINAL_STATUE = 11,
 }
 
-/*
-Add some value to a resource
-*/
+// Add some value to a resource
 fn my_add_resource(game_resources: &mut ResMut<GameResources>, inv_pos_enum: InvPos, amount: f64) {
     let pos = inv_pos_enum as usize;
-    let mut tuple = game_resources.inventory_vec.remove(pos);
-    tuple.1 = tuple.1 + amount;
-    game_resources.inventory_vec.insert(pos, tuple);
+    let mut game_resource = game_resources.inventory_vec.remove(pos);
+    game_resource.amount += amount;
+    game_resources.inventory_vec.insert(pos, game_resource);
 }
-
-/*
-fn my_get_resource_name(game_resources: &mut ResMut<GameResources>, inv_pos_enum: i32) -> String {
-
-    let pos = inv_pos_enum as usize;
-    let tuple = &mut game_resources.inventory_vec[pos];
-    let string_val = String::from(tuple.0);
-    return string_val; //&tuple.0; //
-
-}
-*/
 
 fn my_get_resource_count(game_resources: &mut ResMut<GameResources>, inv_pos_enum: i32) -> f64 {
     let pos = inv_pos_enum as usize;
-    //i think i need to add the "&" here??
-    let tuple = &game_resources.inventory_vec[pos];
-    return tuple.1;
+    let game_resource = &game_resources.inventory_vec[pos];
+    return game_resource.amount;
 }
 
-fn my_get_resource_sprite(game_resources: &mut ResMut<GameResources>, inv_pos_enum: i32) -> egui::TextureId {
+fn my_get_resource_sprite<'a>(game_resources: &'a mut ResMut<GameResources>, inv_pos_enum: i32) -> &'a egui::TextureHandle {
     let pos = inv_pos_enum as usize;
-    //i think i need to add the "&" here??
-    let tuple = &game_resources.inventory_vec[pos];
-    return tuple.2;
+    let game_resource = &game_resources.inventory_vec[pos];
+    return &game_resource.handle;
 }
 
-fn load_image(ctx: &egui::Context, image_name: &str) -> egui::TextureId {
+fn load_image(ctx: &egui::Context, image_name: &str) -> egui::TextureHandle {
     let path = format!("assets/{}.png", image_name);
     let image = match load_image_from_path(path::Path::new(&path)) {
         Ok(image) => image,
@@ -151,88 +148,48 @@ fn load_image(ctx: &egui::Context, image_name: &str) -> egui::TextureId {
         egui::TextureFilter::Linear
     );
 
-    handle.id()
+    handle
 }
 
 fn init_inventory_vec(mut game_resources: ResMut<GameResources>, mut egui_context: ResMut<EguiContext>) {
     let mut ctx = egui_context.ctx_mut();
     
     //Init The vec
-    let tuple = (String::from("Gold"), 0.0, load_image(ctx, "gold"));
-    game_resources
-        .inventory_vec
-        .insert(InvPos::GOLD as usize, tuple);
+    let game_resource = GameResource::new("Gold", 0.0, load_image(ctx, "gold"));
+    game_resources.inventory_vec.insert(InvPos::GOLD as usize, game_resource);
 
-    let tuple = (String::from("Wood"), 0.0, load_image(ctx, "wood"));
-    game_resources
-        .inventory_vec
-        .insert(InvPos::WOOD as usize, tuple);
+    let game_resource = GameResource::new("Wood", 0.0, load_image(ctx, "wood"));
+    game_resources.inventory_vec.insert(InvPos::WOOD as usize, game_resource);
 
-    let tuple = (String::from("Stone"), 0.0, load_image(ctx, "stone"));
-        game_resources
-        .inventory_vec
-        .insert(InvPos::STONE as usize, tuple);
+    let game_resource = GameResource::new("Stone", 0.0, load_image(ctx, "stone"));
+    game_resources.inventory_vec.insert(InvPos::STONE as usize, game_resource);
 
-    let tuple = (String::from("Wheat"), 0.0, load_image(ctx, "wheat"));
-    game_resources
-        .inventory_vec
-        .insert(InvPos::WHEAT as usize, tuple);
+    let game_resource = GameResource::new("Wheat", 0.0, load_image(ctx, "wheat"));
+    game_resources.inventory_vec.insert(InvPos::WHEAT as usize, game_resource);
 
-    let tuple = (String::from("Hatchet"), 0.0, load_image(ctx, "hatchet"));
-    game_resources
-        .inventory_vec
-        .insert(InvPos::HATCHET as usize, tuple);
+    let game_resource = GameResource::new("Hatchet", 0.0, load_image(ctx, "hatchet"));
+    game_resources.inventory_vec.insert(InvPos::HATCHET as usize, game_resource);
 
-    let tuple = (String::from("Pickaxe"), 0.0, load_image(ctx, "pickaxe"));
-    game_resources
-        .inventory_vec
-        .insert(InvPos::PICKAXE as usize, tuple);
+    let game_resource = GameResource::new("Pickaxe", 0.0, load_image(ctx, "pickaxe"));
+    game_resources.inventory_vec.insert(InvPos::PICKAXE as usize, game_resource);
 
-    let tuple = (String::from("Sythe"), 0.0, load_image(ctx, "sythe"));
-    game_resources
-        .inventory_vec
-        .insert(InvPos::SYTHE as usize, tuple);
+    let game_resource = GameResource::new("Sythe", 0.0, load_image(ctx, "sythe"));
+    game_resources.inventory_vec.insert(InvPos::SYTHE as usize, game_resource);
 
-    let tuple = (
-        String::from("Wood Cutter"),
-        0.0,
-        load_image(ctx, "wood_cutter"),
-    );
-    game_resources
-        .inventory_vec
-        .insert(InvPos::WOOD_CUTTER as usize, tuple);
+    let game_resource = GameResource::new("Wood Cutter", 0.0, load_image(ctx, "wood_cutter"));
+    game_resources.inventory_vec.insert(InvPos::WOOD_CUTTER as usize, game_resource);
 
-    let tuple = (String::from("Miner"), 0.0, load_image(ctx, "miner"));
-    game_resources
-        .inventory_vec
-        .insert(InvPos::MINER as usize, tuple);
+    let game_resource = GameResource::new("Miner", 0.0, load_image(ctx, "miner"));
+    game_resources.inventory_vec.insert(InvPos::MINER as usize, game_resource);
 
-    let tuple = (
-        String::from("Super Worker"),
-        0.0,
-        load_image(ctx, "super_worker")
-    );
-    game_resources
-        .inventory_vec
-        .insert(InvPos::SUPER_WORKER as usize, tuple);
+    let game_resource = GameResource::new("Super Worker", 0.0, load_image(ctx, "super_worker"));
+    game_resources.inventory_vec.insert(InvPos::SUPER_WORKER as usize, game_resource);
 
-    let tuple = (
-        String::from("Wheat Field"),
-        0.0,
-        load_image(ctx, "wheat_field")
-    );
-    game_resources
-        .inventory_vec
-        .insert(InvPos::WHEAT_FIELD as usize, tuple);
+    let game_resource = GameResource::new("Wheat Field", 0.0, load_image(ctx, "wheat_field"));
+    game_resources.inventory_vec.insert(InvPos::WHEAT_FIELD as usize, game_resource);
 
-    let tuple = (
-        String::from("Final Statue"),
-        0.0,
-        load_image(ctx, "final_statue")
-    );
-    game_resources
-        .inventory_vec
-        .insert(InvPos::FINAL_STATUE as usize, tuple);
+    let game_resource = GameResource::new("Final Statue", 0.0, load_image(ctx, "final_statue"));
+    game_resources.inventory_vec.insert(InvPos::FINAL_STATUE as usize, game_resource);
 }
 
 fn step_event(keys: Res<Input<KeyCode>>, mut game_resources: ResMut<GameResources>) {
@@ -534,7 +491,7 @@ fn market_view(
     asset_server: Res<AssetServer>,
     mut game_resources: ResMut<GameResources>,
 ) {
-    let mut ctx = egui_context.ctx_mut();
+    let ctx = egui_context.ctx_mut();
 
     let sprite_id_value_1 = ctx.load_texture(
         "s_hatchet",
@@ -808,7 +765,7 @@ fn inventory_view(
                             _ => name = "Default",
                         }
                         ui.label(format!("{}: {:.0}", name, amount));
-                        ui.image(sprite_id_value, [64.0, 64.0]);
+                        ui.image(sprite_id_value.id(), [64.0, 64.0]);
                         //});
                     });
                 }
@@ -853,7 +810,7 @@ fn resources_view(
                             ui.label(format!("{}: {:.1}", name, amount));
                         }
 
-                        ui.image(sprite_id_value, [64.0, 64.0]);
+                        ui.image(sprite_id_value.id(), [64.0, 64.0]);
                         //});
                     });
                 }
